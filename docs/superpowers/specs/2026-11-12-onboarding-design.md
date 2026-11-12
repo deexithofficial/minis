@@ -45,11 +45,23 @@ illustrations.
   there, and we are not inventing sample stats. The implemented
   Save-progress screen keeps the card's sign-up content (headline, the
   three continue options, "Not now") and drops the stats row.
-- **Mascot art:** the design's blob characters are images uploaded into
-  the design canvas and are not exportable as asset files from here. They
-  are redrawn as simple SVG mascots (rounded blob body, two dot eyes) in
-  the same accent colors, via `react-native-svg`. Not pixel-identical to
-  the reference art — same friendly-rounded character, approximated.
+- **Mascot art:** the user supplied the real mascot illustrations as 8
+  PNGs (1024×1024, transparent background), saved to
+  `mobile/src/assets/mascots/`:
+  `green-thinking.png`, `yellow-happy.png`, `blue-pointing.png`,
+  `coral-celebrating.png`, `pink-shy.png`, `lightblue-sad.png`, plus two
+  spares not used by this flow (`lavender-sad-spare.png`,
+  `mint-worried-spare.png`, kept for a possible future screen). Mapping
+  to screens, matching the design's own alt-text naming where it exists
+  ("green blob thinking", "blue blob pointing", "yellow blob", "pink blob
+  asking nicely", "blue blob sad"):
+  - Welcome (trio): `yellow-happy`, `coral-celebrating`, `pink-shy`
+  - Age check: `green-thinking`
+  - Interests: `blue-pointing`
+  - Save progress: `coral-celebrating`
+  - Make your character: `yellow-happy`
+  - Notifications: `pink-shy`
+  - Age-blocked: `lightblue-sad`
 - **Typography:** the design's Google Fonts link for `'Cal Sans'` does not
   correspond to a real Google Fonts family. We bundle the actual
   open-source Cal Sans (`CalSans-SemiBold.otf`, MIT-licensed, published by

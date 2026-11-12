@@ -643,14 +643,16 @@ git commit -m "feat(mobile): auth/users API wrappers and onboarding reducer help
 - Create: `mobile/src/components/ProgressDots.tsx`
 - Create: `mobile/src/components/Chip.tsx`
 - Create: `mobile/src/components/BlobMascot.tsx`
+- Already present (provided by the user, not written by this task): `mobile/src/assets/mascots/{green-thinking,yellow-happy,blue-pointing,coral-celebrating,pink-shy,lightblue-sad,lavender-sad-spare,mint-worried-spare}.png`
 - Test: `mobile/src/state/__tests__/OnboardingContext.test.tsx`
 - Test: `mobile/src/components/__tests__/PillButton.test.tsx`
 - Test: `mobile/src/components/__tests__/ProgressDots.test.tsx`
 - Test: `mobile/src/components/__tests__/Chip.test.tsx`
+- Test: `mobile/src/components/__tests__/BlobMascot.test.tsx`
 
 **Interfaces:**
-- Consumes: `tokenStorage` (Task 7), `PublicUser` (Task 8).
-- Produces: `OnboardingProvider` and `useOnboarding(): { token: string | null; user: PublicUser | null; setSession(token: string, user: PublicUser): void; clearSession(): void }` from `OnboardingContext.tsx`. `PillButton` props `{ label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'disabled'; testID?: string }`. `ProgressDots` props `{ stepCount: number; activeIndex: number }`. `Chip` props `{ label: string; selected: boolean; onPress: () => void }`. `BlobMascot` props `{ color: string; size?: number }`. All consumed by every screen task (10–15).
+- Consumes: `tokenStorage` (Task 7), `PublicUser` (Task 8), the mascot PNGs listed above.
+- Produces: `OnboardingProvider` and `useOnboarding(): { token: string | null; user: PublicUser | null; setSession(token: string, user: PublicUser): void; clearSession(): void }` from `OnboardingContext.tsx`. `PillButton` props `{ label: string; onPress: () => void; variant?: 'primary' | 'secondary' | 'disabled'; testID?: string }`. `ProgressDots` props `{ stepCount: number; activeIndex: number }`. `Chip` props `{ label: string; selected: boolean; onPress: () => void }`. `BlobMascot` props `{ name: MascotName; size?: number }`, where `MascotName` is the exported union type `'green-thinking' | 'yellow-happy' | 'blue-pointing' | 'coral-celebrating' | 'pink-shy' | 'lightblue-sad' | 'lavender-sad-spare' | 'mint-worried-spare'` and `BlobMascot.tsx` also exports the lookup `MASCOTS: Record<MascotName, ImageSourcePropType>` (each entry a `require('../assets/mascots/<name>.png')`). All consumed by every screen task (10–15).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -719,9 +721,27 @@ test('calls onPress when tapped and reflects selected state', () => {
 });
 ```
 
+```tsx
+// mobile/src/components/__tests__/BlobMascot.test.tsx
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { BlobMascot, MASCOTS } from '../BlobMascot';
+
+test('renders an Image sourced from the requested mascot', () => {
+  const { getByTestId } = render(<BlobMascot name="green-thinking" />);
+  expect(getByTestId('blob-mascot').props.source).toBe(MASCOTS['green-thinking']);
+});
+
+test('every mascot name used by the plan resolves to an asset', () => {
+  for (const name of ['green-thinking', 'yellow-happy', 'blue-pointing', 'coral-celebrating', 'pink-shy', 'lightblue-sad'] as const) {
+    expect(MASCOTS[name]).toBeDefined();
+  }
+});
+```
+
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `cd mobile && npm test -- OnboardingContext.test.tsx PillButton.test.tsx ProgressDots.test.tsx Chip.test.tsx`
+Run: `cd mobile && npm test -- OnboardingContext.test.tsx PillButton.test.tsx ProgressDots.test.tsx Chip.test.tsx BlobMascot.test.tsx`
 Expected: FAIL — modules not found.
 
 - [ ] **Step 3: Implement `OnboardingContext.tsx`**
@@ -730,18 +750,18 @@ Expected: FAIL — modules not found.
 
 - [ ] **Step 4: Implement the four components**
 
-`PillButton`: a `Pressable` + `Text`; `variant === 'disabled'` sets `disabled` on the `Pressable` (so `onPress` never fires) and dims the style; `'primary'` uses `colors.lime` background with dark text, `'secondary'` uses a bordered/transparent style with light text. `ProgressDots`: renders `stepCount` views each with `testID="progress-dot"`, the one at `activeIndex` wider and `colors.lime`, others small and `colors.dotInactive`. `Chip`: a `Pressable` + `Text`, background `colors.lime`/`colors.elevated` depending on `selected`. `BlobMascot`: an `react-native-svg` `<Svg>` with a rounded blob `<Path>` (or stacked `<Circle>`/`<Ellipse>`) filled with `color` plus two small dark-dot `<Circle>` eyes, sized by `size` (default `160`).
+`PillButton`: a `Pressable` + `Text`; `variant === 'disabled'` sets `disabled` on the `Pressable` (so `onPress` never fires) and dims the style; `'primary'` uses `colors.lime` background with dark text, `'secondary'` uses a bordered/transparent style with light text. `ProgressDots`: renders `stepCount` views each with `testID="progress-dot"`, the one at `activeIndex` wider and `colors.lime`, others small and `colors.dotInactive`. `Chip`: a `Pressable` + `Text`, background `colors.lime`/`colors.elevated` depending on `selected`. `BlobMascot`: exports `MASCOTS` (the `Record<MascotName, ImageSourcePropType>` described above, one `require(...)` per asset already in `mobile/src/assets/mascots/`) and a component rendering `<Image testID="blob-mascot" source={MASCOTS[name]} style={{ width: size, height: size }} resizeMode="contain" />` (default `size` `160`).
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `cd mobile && npm test -- OnboardingContext.test.tsx PillButton.test.tsx ProgressDots.test.tsx Chip.test.tsx`
+Run: `cd mobile && npm test -- OnboardingContext.test.tsx PillButton.test.tsx ProgressDots.test.tsx Chip.test.tsx BlobMascot.test.tsx`
 Expected: PASS
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add mobile/src/state/OnboardingContext.tsx mobile/src/components mobile/src/state/__tests__/OnboardingContext.test.tsx
-git commit -m "feat(mobile): session context and shared onboarding UI components"
+git add mobile/src/state/OnboardingContext.tsx mobile/src/components mobile/src/assets/mascots mobile/src/state/__tests__/OnboardingContext.test.tsx
+git commit -m "feat(mobile): session context, shared onboarding UI components, mascot assets"
 ```
 
 ---
@@ -756,7 +776,7 @@ git commit -m "feat(mobile): session context and shared onboarding UI components
 - Test: `mobile/src/screens/__tests__/SignInScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `useOnboarding` (Task 9), `guestSignIn`/`login` (Task 8), `PillButton`/`BlobMascot` (Task 9).
+- Consumes: `useOnboarding` (Task 9), `guestSignIn`/`login` (Task 8), `PillButton`/`BlobMascot` (Task 9). Welcome uses `BlobMascot` with `name="yellow-happy"`, `name="coral-celebrating"`, `name="pink-shy"` (the trio).
 - Produces: `OnboardingStackParamList` type (route names `Welcome | AgeCheck | Interests | SaveProgress | Character | Notifications | AgeBlocked | SignIn | Home`, all with `undefined` params) and `OnboardingStack` component (a `createNativeStackNavigator<OnboardingStackParamList>()` with `initialRouteName="Welcome"`) from `mobile/src/navigation/OnboardingStack.tsx`, registering `Welcome` and `SignIn` now — later tasks modify this file to register their screens.
 
 - [ ] **Step 1: Write the failing tests**
@@ -830,7 +850,7 @@ Define `OnboardingStackParamList` and `const Stack = createNativeStackNavigator<
 
 - [ ] **Step 4: Implement `mobile/src/screens/WelcomeScreen.tsx`**
 
-Violet background, `BlobMascot`s, "Minis" wordmark, headline, subtext, `PillButton` "Start playing" (`variant="primary"`) calling `guestSignIn()` then `setSession(token, user)` then `navigation.navigate('AgeCheck')`; text link "I have an account" calling `navigation.navigate('SignIn')` directly.
+Violet background, the three `BlobMascot`s named above, "Minis" wordmark, headline, subtext, `PillButton` "Start playing" (`variant="primary"`) calling `guestSignIn()` then `setSession(token, user)` then `navigation.navigate('AgeCheck')`; text link "I have an account" calling `navigation.navigate('SignIn')` directly.
 
 - [ ] **Step 5: Implement `mobile/src/screens/SignInScreen.tsx`**
 
@@ -859,7 +879,7 @@ git commit -m "feat(mobile): navigation skeleton, Welcome and Sign-in screens"
 - Test: `mobile/src/screens/__tests__/AgeCheckScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `isUnderMinimumAge` (Task 8), `updateMe` (Task 8), `useOnboarding` (Task 9), `ProgressDots`/`PillButton` (Task 9).
+- Consumes: `isUnderMinimumAge` (Task 8), `updateMe` (Task 8), `useOnboarding` (Task 9), `ProgressDots`/`PillButton`/`BlobMascot` (Task 9). `AgeCheckScreen` uses `BlobMascot name="green-thinking"`; `AgeBlockedScreen` uses `BlobMascot name="lightblue-sad"`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -906,11 +926,11 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `mobile/src/screens/AgeCheckScreen.tsx`**
 
-Back button (`navigation.goBack`), `ProgressDots stepCount={3} activeIndex={0}`, headline "When were you born?", subtext, a scrollable year list (`testID="year-picker"`, years e.g. `1950..currentYear`, selecting one sets local `birthYear` state — implemented as a simple `FlatList`/`ScrollView` of pressable year rows is sufficient; it does not need to be the exact perspective-wheel visual). `PillButton` "Continue": if `isUnderMinimumAge(birthYear)` navigate `'AgeBlocked'` (no API call); else `await updateMe(token, { birthYear })` then navigate `'Interests'`.
+Back button (`navigation.goBack`), `ProgressDots stepCount={3} activeIndex={0}`, `BlobMascot name="green-thinking"`, headline "When were you born?", subtext, a scrollable year list (`testID="year-picker"`, years e.g. `1950..currentYear`, selecting one sets local `birthYear` state — implemented as a simple `FlatList`/`ScrollView` of pressable year rows is sufficient; it does not need to be the exact perspective-wheel visual). `PillButton` "Continue": if `isUnderMinimumAge(birthYear)` navigate `'AgeBlocked'` (no API call); else `await updateMe(token, { birthYear })` then navigate `'Interests'`.
 
 - [ ] **Step 4: Implement `mobile/src/screens/AgeBlockedScreen.tsx`**
 
-Headline "Not quite yet", subtext from the spec. "Check my birth year" → `navigation.navigate('AgeCheck')`. "Close" → `navigation.navigate('Welcome')`.
+`BlobMascot name="lightblue-sad"`, headline "Not quite yet", subtext from the spec. "Check my birth year" → `navigation.navigate('AgeCheck')`. "Close" → `navigation.navigate('Welcome')`.
 
 - [ ] **Step 5: Register both screens**
 
@@ -938,7 +958,7 @@ git commit -m "feat(mobile): age-check and age-blocked screens"
 - Test: `mobile/src/screens/__tests__/InterestsScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `toggleInterest` (Task 8), `updateMe` (Task 8), `Chip`/`ProgressDots`/`PillButton` (Task 9).
+- Consumes: `toggleInterest` (Task 8), `updateMe` (Task 8), `Chip`/`ProgressDots`/`PillButton`/`BlobMascot` (Task 9). Uses `BlobMascot name="blue-pointing"`.
 - Produces: exported `INTEREST_OPTIONS = ['Runner', 'Puzzle', 'Casual', 'Arcade', 'Racing', 'Cozy', 'Word', 'Strategy', 'Sports', 'Rhythm']` from `InterestsScreen.tsx`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -982,7 +1002,7 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `mobile/src/screens/InterestsScreen.tsx`**
 
-Local `selected: string[]` state; renders a wrapping `View` of `Chip`s for `INTEREST_OPTIONS`, each `onPress` calling `setSelected(toggleInterest(selected, label))`. `ProgressDots stepCount={3} activeIndex={1}`. Both "Continue" and "Skip" call `await updateMe(token, { interests: selected })` (Skip always passes the current `selected`, which starts `[]`) then `navigation.navigate('SaveProgress')`.
+`BlobMascot name="blue-pointing"` near the headline. Local `selected: string[]` state; renders a wrapping `View` of `Chip`s for `INTEREST_OPTIONS`, each `onPress` calling `setSelected(toggleInterest(selected, label))`. `ProgressDots stepCount={3} activeIndex={1}`. Both "Continue" and "Skip" call `await updateMe(token, { interests: selected })` (Skip always passes the current `selected`, which starts `[]`) then `navigation.navigate('SaveProgress')`.
 
 - [ ] **Step 4: Register the screen**
 
@@ -1010,7 +1030,7 @@ git commit -m "feat(mobile): interests screen"
 - Test: `mobile/src/screens/__tests__/SaveProgressScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `signup` (Task 8), `useOnboarding` (Task 9), `PillButton` (Task 9).
+- Consumes: `signup` (Task 8), `useOnboarding` (Task 9), `PillButton`/`BlobMascot` (Task 9). Uses `BlobMascot name="coral-celebrating"`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1072,7 +1092,7 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `mobile/src/screens/SaveProgressScreen.tsx`**
 
-Headline "Save your progress", subtext. `PillButton`s "Continue with Apple" / "Continue with Google" (`variant="secondary"`) call `Alert.alert('Coming soon')`. "Continue with email" toggles a local `showForm` flag revealing three `TextInput`s (`placeholder="Email"`, `"Password"` secure, `"Confirm password"` secure) and a "Create account" `PillButton`; its handler checks `password === confirmPassword` (else inline error `'Passwords do not match.'`) and `password.length >= 8` (else `'Password must be at least 8 characters.'`), then calls `signup({ email, password, guestToken: token })`, catching `ApiError` to show `err.message` inline; on success `setSession(newToken, user)` then `navigation.navigate('Character')`. "Not now" calls `navigation.navigate('Character')` directly, no API call.
+`BlobMascot name="coral-celebrating"`, headline "Save your progress", subtext. `PillButton`s "Continue with Apple" / "Continue with Google" (`variant="secondary"`) call `Alert.alert('Coming soon')`. "Continue with email" toggles a local `showForm` flag revealing three `TextInput`s (`placeholder="Email"`, `"Password"` secure, `"Confirm password"` secure) and a "Create account" `PillButton`; its handler checks `password === confirmPassword` (else inline error `'Passwords do not match.'`) and `password.length >= 8` (else `'Password must be at least 8 characters.'`), then calls `signup({ email, password, guestToken: token })`, catching `ApiError` to show `err.message` inline; on success `setSession(newToken, user)` then `navigation.navigate('Character')`. "Not now" calls `navigation.navigate('Character')` directly, no API call.
 
 - [ ] **Step 4: Register the screen**
 
@@ -1100,7 +1120,7 @@ git commit -m "feat(mobile): save-progress sign-up screen"
 - Test: `mobile/src/screens/__tests__/CharacterScreen.test.tsx`
 
 **Interfaces:**
-- Consumes: `updateMe` (Task 8), `useOnboarding` (Task 9), `BlobMascot`/`ProgressDots`/`PillButton` (Task 9). Character look values are the strings `'lime' | 'pink' | 'sky'`.
+- Consumes: `updateMe` (Task 8), `useOnboarding` (Task 9), `BlobMascot`/`ProgressDots`/`PillButton` (Task 9). Character look values are the strings `'lime' | 'pink' | 'sky'` (an abstract 3-way avatar-color choice, independent of the named mascot illustrations — the screen's header art uses `BlobMascot name="yellow-happy"`, matching the design's own "Yellow blob" reference for this screen).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1145,7 +1165,7 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement `mobile/src/screens/CharacterScreen.tsx`**
 
-Back button, `ProgressDots stepCount={3} activeIndex={2}`, headline "Make your character", three `BlobMascot`-swatch `Pressable`s with `testID="look-lime" | "look-pink" | "look-sky"` and local `look: 'lime' | 'pink' | 'sky' | null` state, name `TextInput` (`placeholder="Pick a name"`). "Continue" calls `await updateMe(token, { characterLook: look, characterName: name })` then `navigation.navigate('Notifications')`. "Skip for now" navigates directly with no API call.
+Back button, `ProgressDots stepCount={3} activeIndex={2}`, `BlobMascot name="yellow-happy"` as the header illustration, headline "Make your character", three small selectable swatch `Pressable`s (colored `lime`/`pink`/`sky`, not the named mascot images) with `testID="look-lime" | "look-pink" | "look-sky"` and local `look: 'lime' | 'pink' | 'sky' | null` state, name `TextInput` (`placeholder="Pick a name"`). "Continue" calls `await updateMe(token, { characterLook: look, characterName: name })` then `navigation.navigate('Notifications')`. "Skip for now" navigates directly with no API call.
 
 - [ ] **Step 4: Register the screen**
 
@@ -1176,7 +1196,7 @@ git commit -m "feat(mobile): character creation screen"
 - Test: `mobile/__tests__/App.test.tsx`
 
 **Interfaces:**
-- Consumes: `updateMe` (Task 8), `useOnboarding` (Task 9), everything from `OnboardingStack` (Task 10, as modified by Tasks 11–14).
+- Consumes: `updateMe` (Task 8), `useOnboarding` (Task 9), `BlobMascot` (Task 9, used as `name="pink-shy"`), everything from `OnboardingStack` (Task 10, as modified by Tasks 11–14).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1241,7 +1261,7 @@ Expected: FAIL — module not found / `App` still renders only the Task 6 placeh
 
 - [ ] **Step 3: Implement `mobile/src/screens/NotificationsScreen.tsx`**
 
-Headline "Keep your streak alive", subtext, a static mock notification preview `View`. "Turn on reminders": `await Notifications.requestPermissionsAsync()` (result ignored for the opt-in value), then `await updateMe(token, { notificationsOptIn: true })`, then `navigation.navigate('Home')`. "Not now": `await updateMe(token, { notificationsOptIn: false })` then navigate, no permission request.
+`BlobMascot name="pink-shy"`, headline "Keep your streak alive", subtext, a static mock notification preview `View`. "Turn on reminders": `await Notifications.requestPermissionsAsync()` (result ignored for the opt-in value), then `await updateMe(token, { notificationsOptIn: true })`, then `navigation.navigate('Home')`. "Not now": `await updateMe(token, { notificationsOptIn: false })` then navigate, no permission request.
 
 - [ ] **Step 4: Implement `mobile/src/screens/HomeScreen.tsx`**
 
