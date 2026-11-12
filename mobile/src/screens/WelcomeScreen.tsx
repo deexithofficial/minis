@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../navigation/OnboardingStack';
 import { useOnboarding } from '../state/OnboardingContext';
 import { guestSignIn } from '../api/auth';
+import { ApiError } from '../api/client';
 import { PillButton } from '../components/PillButton';
 import { BlobMascot } from '../components/BlobMascot';
 import { colors } from '../theme/colors';
@@ -15,11 +17,25 @@ interface Props {
 
 export function WelcomeScreen({ navigation }: Props) {
   const { setSession } = useOnboarding();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleStartPlaying() {
-    const { token, user } = await guestSignIn();
-    setSession(token, user);
-    navigation.navigate('AgeCheck');
+    setError(null);
+    setBusy(true);
+    try {
+      const { token, user } = await guestSignIn();
+      setSession(token, user);
+      navigation.navigate('AgeCheck');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   function handleHaveAccount() {
@@ -27,20 +43,25 @@ export function WelcomeScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.mascots}>
         <BlobMascot name="yellow-happy" size={96} />
         <BlobMascot name="coral-celebrating" size={120} />
         <BlobMascot name="pink-shy" size={96} />
       </View>
       <Text style={styles.wordmark}>Minis</Text>
-      <Text style={styles.headline}>Play, create, and learn together</Text>
-      <Text style={styles.subtext}>A playful world built just for you.</Text>
-      <PillButton label="Start playing" variant="primary" onPress={handleStartPlaying} />
+      <Text style={styles.headline}>Tiny games. Endless swipes.</Text>
+      <Text style={styles.subtext}>Swipe, play, repeat. No sign-up to start.</Text>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <PillButton
+        label="Start playing"
+        variant={busy ? 'disabled' : 'primary'}
+        onPress={handleStartPlaying}
+      />
       <Pressable onPress={handleHaveAccount}>
         <Text style={styles.link}>I have an account</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -72,6 +93,11 @@ const styles = StyleSheet.create({
   subtext: {
     fontSize: type_.body,
     color: colors.text,
+    textAlign: 'center',
+  },
+  error: {
+    color: colors.pink,
+    fontSize: type_.caption,
     textAlign: 'center',
   },
   link: {

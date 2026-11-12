@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../navigation/OnboardingStack';
 import { PillButton } from '../components/PillButton';
@@ -13,26 +14,27 @@ interface Props {
 
 export function AgeBlockedScreen({ navigation }: Props) {
   function handleCheckBirthYear() {
-    navigation.navigate('AgeCheck');
+    // navigate() would PUSH a duplicate AgeCheck onto the stack; popTo goes
+    // back to the existing one instead, so the stack doesn't grow unbounded.
+    navigation.popTo('AgeCheck');
   }
 
   function handleClose() {
-    navigation.navigate('Welcome');
+    navigation.popTo('Welcome');
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <BlobMascot name="lightblue-sad" />
       <Text style={styles.headline}>Not quite yet</Text>
       <Text style={styles.subtext}>
-        You need to be at least 13 years old to play. Double-check your birth year, or come back
-        when you're old enough.
+        This app is for players 13 and over. Come back when you are older, we will be here.
       </Text>
       <PillButton label="Check my birth year" variant="primary" onPress={handleCheckBirthYear} />
       <Pressable onPress={handleClose}>
         <Text style={styles.link}>Close</Text>
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 

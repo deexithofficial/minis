@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../navigation/OnboardingStack';
 import { useOnboarding } from '../state/OnboardingContext';
 import { isUnderMinimumAge } from '../state/onboardingReducer';
 import { updateMe } from '../api/users';
+import { ApiError } from '../api/client';
 import { ProgressDots } from '../components/ProgressDots';
 import { PillButton } from '../components/PillButton';
 import { BlobMascot } from '../components/BlobMascot';
@@ -21,6 +23,8 @@ const YEARS = Array.from({ length: CURRENT_YEAR - 1950 + 1 }, (_, index) => CURR
 export function AgeCheckScreen({ navigation }: Props) {
   const { token } = useOnboarding();
   const [birthYear, setBirthYear] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleContinue() {
     if (birthYear === null) {
@@ -30,19 +34,31 @@ export function AgeCheckScreen({ navigation }: Props) {
       navigation.navigate('AgeBlocked');
       return;
     }
-    await updateMe(token ?? '', { birthYear });
-    navigation.navigate('Interests');
+    setError(null);
+    setBusy(true);
+    try {
+      await updateMe(token ?? '', { birthYear });
+      navigation.navigate('Interests');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Text style={styles.backLabel}>Back</Text>
       </Pressable>
       <ProgressDots stepCount={3} activeIndex={0} />
       <BlobMascot name="green-thinking" />
       <Text style={styles.headline}>When were you born?</Text>
-      <Text style={styles.subtext}>We use this to keep your experience age-appropriate.</Text>
+      <Text style={styles.subtext}>We use this to show games that suit you. It stays private.</Text>
       <ScrollView
         testID="year-picker"
         style={styles.picker}
@@ -59,8 +75,9 @@ export function AgeCheckScreen({ navigation }: Props) {
           </Pressable>
         ))}
       </ScrollView>
-      <PillButton label="Continue" variant="primary" onPress={handleContinue} />
-    </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <PillButton label="Continue" variant={busy ? 'disabled' : 'primary'} onPress={handleContinue} />
+    </SafeAreaView>
   );
 }
 
@@ -105,5 +122,9 @@ const styles = StyleSheet.create({
   yearLabelSelected: {
     color: colors.lime,
     fontWeight: '700',
+  },
+  error: {
+    color: colors.pink,
+    fontSize: type_.caption,
   },
 });

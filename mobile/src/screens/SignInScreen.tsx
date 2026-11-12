@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../navigation/OnboardingStack';
 import { useOnboarding } from '../state/OnboardingContext';
@@ -24,7 +25,9 @@ export function SignInScreen({ navigation }: Props) {
     try {
       const { token, user } = await login({ email, password });
       setSession(token, user);
-      navigation.navigate('Home');
+      // Home becomes the sole stack entry so a back-swipe can't re-enter
+      // onboarding and re-submit a signup with a now-non-guest token.
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError('Incorrect email or password.');
@@ -35,7 +38,7 @@ export function SignInScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.headline}>Sign in</Text>
       <TextInput
         style={styles.input}
@@ -56,7 +59,7 @@ export function SignInScreen({ navigation }: Props) {
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <PillButton label="Continue" variant="primary" onPress={handleContinue} />
-    </View>
+    </SafeAreaView>
   );
 }
 

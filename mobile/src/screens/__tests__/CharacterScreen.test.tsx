@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { OnboardingProvider } from '../../state/OnboardingContext';
 import * as users from '../../api/users';
+import { ApiError } from '../../api/client';
 import { CharacterScreen } from '../CharacterScreen';
 
 jest.mock('../../api/users');
@@ -27,4 +28,25 @@ test('Skip for now navigates without saving', () => {
   fireEvent.press(getByText('Skip for now'));
   expect(navigate).toHaveBeenCalledWith('Notifications');
   expect(users.updateMe).not.toHaveBeenCalled();
+});
+
+test('Back goes back to SaveProgress', () => {
+  const goBack = jest.fn();
+  const { getByText } = render(
+    <OnboardingProvider><CharacterScreen navigation={{ navigate: jest.fn(), goBack } as any} /></OnboardingProvider>
+  );
+  fireEvent.press(getByText('Back'));
+  expect(goBack).toHaveBeenCalledTimes(1);
+});
+
+test('a failed save shows an inline error and does not navigate', async () => {
+  (users.updateMe as jest.Mock).mockRejectedValue(new ApiError(500, 'Request failed'));
+  const navigate = jest.fn();
+  const { getByText, getByTestId } = render(
+    <OnboardingProvider><CharacterScreen navigation={{ navigate, goBack: jest.fn() } as any} /></OnboardingProvider>
+  );
+  fireEvent.press(getByTestId('look-lime'));
+  fireEvent.press(getByText('Continue'));
+  await waitFor(() => expect(getByText('Request failed')).toBeTruthy());
+  expect(navigate).not.toHaveBeenCalled();
 });

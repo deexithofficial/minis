@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as tokenStorage from '../storage/tokenStorage';
 import type { PublicUser } from './onboardingReducer';
 
@@ -29,7 +30,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const value: OnboardingContextValue = { token, user, setSession, clearSession };
 
-  return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
+  return (
+    <OnboardingContext.Provider value={value}>
+      {/* Every screen uses SafeAreaView/useSafeAreaInsets; this is the one
+          provider all of them (and every screen test, which renders through
+          OnboardingProvider) sit under. */}
+      <SafeAreaProvider>{children}</SafeAreaProvider>
+    </OnboardingContext.Provider>
+  );
 }
 
 export function useOnboarding(): OnboardingContextValue {

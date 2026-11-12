@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { OnboardingStackParamList } from '../navigation/OnboardingStack';
 import { useOnboarding } from '../state/OnboardingContext';
@@ -54,13 +55,13 @@ export function SaveProgressScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <BlobMascot name="coral-celebrating" />
       <Text style={styles.headline}>Save your progress</Text>
-      <Text style={styles.subtext}>Create an account so you never lose your streak.</Text>
+      <Text style={styles.subtext}>Keep your score, coins and favourites on any phone.</Text>
 
-      <PillButton label="Continue with Apple" variant="secondary" onPress={handleComingSoon} />
-      <PillButton label="Continue with Google" variant="secondary" onPress={handleComingSoon} />
+      <PillButton label="Continue with Apple" variant="mutedSecondary" onPress={handleComingSoon} />
+      <PillButton label="Continue with Google" variant="mutedSecondary" onPress={handleComingSoon} />
       <PillButton label="Continue with email" variant="primary" onPress={() => setShowForm(true)} />
 
       {showForm ? (
@@ -96,7 +97,7 @@ export function SaveProgressScreen({ navigation }: Props) {
       ) : null}
 
       <PillButton label="Not now" variant="secondary" onPress={handleNotNow} />
-    </View>
+    </SafeAreaView>
   );
 }
 

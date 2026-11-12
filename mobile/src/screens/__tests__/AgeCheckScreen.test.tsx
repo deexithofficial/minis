@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { OnboardingProvider } from '../../state/OnboardingContext';
 import * as users from '../../api/users';
+import { ApiError } from '../../api/client';
 import { AgeCheckScreen } from '../AgeCheckScreen';
 
 jest.mock('../../api/users');
@@ -29,4 +30,17 @@ test('a birth year one year under the minimum age blocks without saving', async 
   fireEvent.press(getByText('Continue'));
   await waitFor(() => expect(navigate).toHaveBeenCalledWith('AgeBlocked'));
   expect(users.updateMe).not.toHaveBeenCalled();
+});
+
+test('a failed save shows an inline error and does not navigate', async () => {
+  (users.updateMe as jest.Mock).mockRejectedValue(new ApiError(500, 'Request failed'));
+  const navigate = jest.fn();
+  const thisYear = new Date().getFullYear();
+  const { getByText, getByTestId } = render(
+    <OnboardingProvider><AgeCheckScreen navigation={{ navigate, goBack: jest.fn() } as any} /></OnboardingProvider>
+  );
+  fireEvent(getByTestId('year-picker'), 'onSelect', thisYear - 20);
+  fireEvent.press(getByText('Continue'));
+  await waitFor(() => expect(getByText('Request failed')).toBeTruthy());
+  expect(navigate).not.toHaveBeenCalled();
 });

@@ -5,12 +5,16 @@ import { colors } from '../theme/colors';
 export interface PillButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'disabled';
+  // 'mutedSecondary' LOOKS disabled (dimmed, muted color) but stays tappable —
+  // for controls like the social sign-in buttons that must still register a
+  // tap (to show a "coming soon" notice) while reading as disabled.
+  variant?: 'primary' | 'secondary' | 'disabled' | 'mutedSecondary';
   testID?: string;
 }
 
 export function PillButton({ label, onPress, variant = 'primary', testID }: PillButtonProps) {
   const isDisabled = variant === 'disabled';
+  const isSecondaryLike = variant === 'secondary' || variant === 'mutedSecondary';
 
   return (
     <Pressable
@@ -20,7 +24,8 @@ export function PillButton({ label, onPress, variant = 'primary', testID }: Pill
       style={[
         styles.base,
         variant === 'primary' && styles.primary,
-        variant === 'secondary' && styles.secondary,
+        isSecondaryLike && styles.secondary,
+        variant === 'mutedSecondary' && styles.muted,
         isDisabled && styles.disabled,
       ]}
     >
@@ -28,7 +33,8 @@ export function PillButton({ label, onPress, variant = 'primary', testID }: Pill
         style={[
           styles.label,
           variant === 'primary' && styles.primaryLabel,
-          variant === 'secondary' && styles.secondaryLabel,
+          isSecondaryLike && styles.secondaryLabel,
+          variant === 'mutedSecondary' && styles.mutedLabel,
           isDisabled && styles.disabledLabel,
         ]}
       >
@@ -58,6 +64,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.elevated,
     opacity: 0.5,
   },
+  muted: {
+    opacity: 0.4,
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
@@ -69,6 +78,9 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   disabledLabel: {
+    color: colors.textMuted,
+  },
+  mutedLabel: {
     color: colors.textMuted,
   },
 });

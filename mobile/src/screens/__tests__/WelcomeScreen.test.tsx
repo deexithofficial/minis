@@ -2,6 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { OnboardingProvider } from '../../state/OnboardingContext';
 import * as auth from '../../api/auth';
+import { ApiError } from '../../api/client';
 import { WelcomeScreen } from '../WelcomeScreen';
 
 jest.mock('../../api/auth');
@@ -25,4 +26,15 @@ test('I have an account navigates to SignIn without calling the API', () => {
   fireEvent.press(getByText('I have an account'));
   expect(navigate).toHaveBeenCalledWith('SignIn');
   expect(auth.guestSignIn).not.toHaveBeenCalled();
+});
+
+test('a failed guest sign-in shows an inline error and does not navigate', async () => {
+  (auth.guestSignIn as jest.Mock).mockRejectedValue(new ApiError(500, 'Request failed'));
+  const navigate = jest.fn();
+  const { getByText } = render(
+    <OnboardingProvider><WelcomeScreen navigation={{ navigate } as any} /></OnboardingProvider>
+  );
+  fireEvent.press(getByText('Start playing'));
+  await waitFor(() => expect(getByText('Request failed')).toBeTruthy());
+  expect(navigate).not.toHaveBeenCalled();
 });

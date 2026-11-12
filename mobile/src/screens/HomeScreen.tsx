@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOnboarding } from '../state/OnboardingContext';
 import { colors } from '../theme/colors';
 import { fonts, type as type_ } from '../theme/typography';
@@ -8,10 +9,10 @@ export function HomeScreen() {
   const { user } = useOnboarding();
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.headline}>Onboarding complete</Text>
       <Text style={styles.subtext}>{user?.email ?? 'Guest'}</Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
