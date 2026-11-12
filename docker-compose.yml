@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: minis
+      POSTGRES_USER: ${POSTGRES_USER:-minis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-minis}
+    ports:
+      - "5432:5432"
+    volumes:
+      - minis_postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  minis_postgres_data:
