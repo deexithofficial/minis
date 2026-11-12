@@ -4,6 +4,7 @@ import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { SignInScreen } from '../screens/SignInScreen';
 import { AgeCheckScreen } from '../screens/AgeCheckScreen';
 import { AgeBlockedScreen } from '../screens/AgeBlockedScreen';
+import { InterestsScreen } from '../screens/InterestsScreen';
 
 export type OnboardingStackParamList = {
   Welcome: undefined;
@@ -26,6 +27,7 @@ export function OnboardingStack() {
       <Stack.Screen name="SignIn" component={SignInScreen} />
       <Stack.Screen name="AgeCheck" component={AgeCheckScreen} />
       <Stack.Screen name="AgeBlocked" component={AgeBlockedScreen} />
+      <Stack.Screen name="Interests" component={InterestsScreen} />
     </Stack.Navigator>
   );
 }
