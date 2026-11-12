@@ -34,6 +34,19 @@ export async function findByEmail(email: string): Promise<UserRow | null> {
   return result.rows[0] ?? null;
 }
 
+export async function createAccount(
+  email: string,
+  passwordHash: string
+): Promise<UserRow> {
+  const result = await pool.query<UserRow>(
+    `INSERT INTO users (email, password_hash, is_guest)
+     VALUES (lower($1), $2, false)
+     RETURNING *`,
+    [email, passwordHash]
+  );
+  return result.rows[0];
+}
+
 export async function upgradeToAccount(
   id: string,
   email: string,
