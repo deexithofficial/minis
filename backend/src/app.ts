@@ -1,6 +1,7 @@
 import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import { authRouter } from './auth/routes';
+import { usersRouter } from './users/routes';
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/auth', authRouter);
+app.use('/users', usersRouter);
 
 const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   // eslint-disable-next-line no-console
