@@ -148,7 +148,7 @@ container start):
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE,
+  email TEXT,
   password_hash TEXT,
   is_guest BOOLEAN NOT NULL DEFAULT TRUE,
   birth_year INTEGER,
@@ -159,7 +159,16 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));
 ```
+
+The uniqueness constraint is a case-insensitive **index** (`lower(email)`), not a
+plain column `UNIQUE`, so `Foo@x.com` and `foo@x.com` collide at the database
+level regardless of which code path (fresh signup or guest-upgrade) inserts
+or updates the row — a plain case-sensitive column constraint would miss the
+upgrade path, since that path's conflict check is a caught constraint
+violation rather than an explicit pre-query.
 
 No migration framework is introduced at this stage — there is one table,
 and `init.sql` is the whole schema. (Noted as a thing to revisit once the

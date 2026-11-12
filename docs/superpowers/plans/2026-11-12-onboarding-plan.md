@@ -42,6 +42,7 @@
 - Create: `backend/package.json`
 - Create: `backend/tsconfig.json`
 - Create: `backend/.env.example`
+- Create: `.env.example` (repo root — `POSTGRES_USER`/`POSTGRES_PASSWORD` defaults for `docker-compose.yml`)
 - Create: `backend/.gitignore`
 - Create: `backend/src/app.ts`
 - Create: `backend/src/server.ts`
@@ -77,7 +78,7 @@ Expected: FAIL — `src/app.ts` does not exist / `app` not exported.
 
 - [ ] **Step 4: Write `docker-compose.yml` and `backend/db/init.sql`**
 
-`docker-compose.yml` at the repo root defines one service, `postgres` (image `postgres:16`), with `POSTGRES_DB=minis`, `POSTGRES_USER`/`POSTGRES_PASSWORD` from a `.env` (document default `minis`/`minis` in a root `.env.example`), a named volume for data, port `5432:5432`, and mounts `./backend/db/init.sql` read-only into `/docker-entrypoint-initdb.d/init.sql`. `backend/db/init.sql` contains exactly the `users` table DDL from the spec (`CREATE TABLE users (...)` with `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `email TEXT UNIQUE`, `password_hash TEXT`, `is_guest BOOLEAN NOT NULL DEFAULT TRUE`, `birth_year INTEGER`, `interests TEXT[] NOT NULL DEFAULT '{}'`, `character_look TEXT`, `character_name TEXT`, `notifications_opt_in BOOLEAN`, `created_at`/`updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`), preceded by `CREATE EXTENSION IF NOT EXISTS pgcrypto;` (needed for `gen_random_uuid()`).
+`docker-compose.yml` at the repo root defines one service, `postgres` (image `postgres:16`), with `POSTGRES_DB=minis`, `POSTGRES_USER`/`POSTGRES_PASSWORD` from a `.env` (document default `minis`/`minis` in a root `.env.example`), a named volume for data, port `5432:5432`, and mounts `./backend/db/init.sql` read-only into `/docker-entrypoint-initdb.d/init.sql`. `backend/db/init.sql` contains exactly the `users` table DDL from the spec (`CREATE TABLE users (...)` with `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `email TEXT` (no column-level `UNIQUE` — see below), `password_hash TEXT`, `is_guest BOOLEAN NOT NULL DEFAULT TRUE`, `birth_year INTEGER`, `interests TEXT[] NOT NULL DEFAULT '{}'`, `character_look TEXT`, `character_name TEXT`, `notifications_opt_in BOOLEAN`, `created_at`/`updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`), followed by `CREATE UNIQUE INDEX users_email_lower_idx ON users (lower(email));`, preceded by `CREATE EXTENSION IF NOT EXISTS pgcrypto;` (needed for `gen_random_uuid()`). The index is case-insensitive by construction (`lower(email)`) so uniqueness holds regardless of which code path writes the row — a plain case-sensitive column `UNIQUE` would miss collisions through the guest-upgrade path in Task 4, which detects conflicts via a caught constraint violation rather than a pre-query.
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -238,12 +239,13 @@ git commit -m "feat(backend): users repository and public-shape mapping"
 **Files:**
 - Create: `backend/src/middleware/requireAuth.ts`
 - Create: `backend/src/auth/routes.ts`
+- Modify: `backend/src/users/repo.ts` (add `createAccount`)
 - Modify: `backend/src/app.ts` (mount `authRouter` at `/auth`)
 - Test: `backend/tests/auth.test.ts`
 
 **Interfaces:**
 - Consumes: `signToken`/`verifyToken` (Task 2), `hashPassword`/`verifyPassword` (Task 2), repo functions + `toPublicUser` (Task 3).
-- Produces: `requireAuth: RequestHandler` — verifies `Authorization: Bearer <token>`, on success sets `req.auth = { id: payload.sub, isGuest: payload.isGuest }` and calls `next()`, on failure responds `401 { error: 'Unauthorized' }`. `optionalGuestAuth: RequestHandler` — same verification, but on any failure (missing header, invalid token, or `isGuest: false`) it calls `next()` without setting `req.auth` and without erroring; only a valid guest token sets `req.auth`. Both used by Task 5; `optionalGuestAuth` used by `/auth/signup` in this task. `authRouter: Router` exported from `backend/src/auth/routes.ts`, mounted in `app.ts` at `/auth`.
+- Produces: `requireAuth: RequestHandler` — verifies `Authorization: Bearer <token>`, on success sets `req.auth = { id: payload.sub, isGuest: payload.isGuest }` and calls `next()`, on failure responds `401 { error: 'Unauthorized' }`. `optionalGuestAuth: RequestHandler` — same verification, but on any failure (missing header, invalid token, or `isGuest: false`) it calls `next()` without setting `req.auth` and without erroring; only a valid guest token sets `req.auth`. Both used by Task 5; `optionalGuestAuth` used by `/auth/signup` in this task. `authRouter: Router` exported from `backend/src/auth/routes.ts`, mounted in `app.ts` at `/auth`. `createAccount(email: string, passwordHash: string): Promise<UserRow>` added to `backend/src/users/repo.ts` (inserts a fresh non-guest row; lets the database's case-insensitive `users_email_lower_idx` reject a duplicate rather than pre-checking, matching the upgrade path's approach).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -316,7 +318,7 @@ Both middlewares read the `Authorization` header, split on `Bearer `, call `veri
 - [ ] **Step 4: Implement `backend/src/auth/routes.ts`**
 
 `POST /guest`: `createGuestUser()`, `signToken({ sub: user.id, isGuest: true })`, respond `201 { token, user: toPublicUser(user) }`.
-`POST /signup`: validate `email` present and `password.length >= 8` (else `400`); use `optionalGuestAuth` so `req.auth` may be set; if `req.auth` present, call `upgradeToAccount(req.auth.id, email, await hashPassword(password))`, else check `findByEmail` first (→ `409` if taken) and insert a fresh non-guest row (add an `createAccount(email, passwordHash)` repo function alongside Task 3's others, returning the row); sign a new token with `isGuest: false`; respond `200 { token, user }`. Catch a unique-constraint DB error from the upgrade path too and map it to `409`.
+`POST /signup`: validate `email` present and `password.length >= 8` (else `400`); use `optionalGuestAuth` so `req.auth` may be set; if `req.auth` present, call `upgradeToAccount(req.auth.id, email, await hashPassword(password))`, else call `createAccount(email, await hashPassword(password))`; sign a new token with `isGuest: false`; respond `200 { token, user }`. Both branches wrap their database call in a try/catch and map a unique-constraint violation (Postgres error code `23505`, raised by `users_email_lower_idx`) to `409 { error: 'Email already in use' }` — this is the single source of the duplicate-email check for both paths (the index is case-insensitive, so it catches a same-case or different-case collision through either branch).
 `POST /login`: `findByEmail`, `401` if not found or `verifyPassword` fails; else sign token with the row's `is_guest` and respond `200 { token, user }`.
 
 - [ ] **Step 5: Mount the router**
