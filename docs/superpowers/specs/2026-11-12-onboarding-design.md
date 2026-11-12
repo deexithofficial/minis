@@ -64,10 +64,16 @@ illustrations.
   - Age-blocked: `lightblue-sad`
 - **Typography:** the design's Google Fonts link for `'Cal Sans'` does not
   correspond to a real Google Fonts family. We bundle the actual
-  open-source Cal Sans (`CalSans-SemiBold.otf`, MIT-licensed, published by
-  cal.com at github.com/calcom/font) as a local font file loaded via
+  open-source Cal Sans (`CalSans-SemiBold.otf`, published by cal.com at
+  github.com/calcom/font, licensed under the SIL Open Font License,
+  Version 1.1 — not MIT as earlier noted here; the full license text is
+  bundled alongside the font at
+  `mobile/src/assets/fonts/LICENSE.txt`) as a local font file loaded via
   `expo-font`, and use the system sans-serif as fallback until fonts
-  finish loading.
+  finish loading. The bundled `.otf` is actually a later TrueType build
+  of the font (version 2.012) substituted for the original OpenType/CFF
+  release referenced above, per the Task 6 sourcing ruling — same family
+  and weight, a newer upstream build.
 
 ## Screen flow
 
@@ -81,7 +87,8 @@ Welcome ──Start playing──► AgeCheck ──≥13──► Interests ─
 ```
 
 - **Welcome** — violet (`#6A47F5`) background, blob-trio illustration
-  (SVG), "Minis" wordmark, headline "Tiny games. Endless swipes.",
+  (PNG mascots — see "Mascot art" above), "Minis" wordmark, headline
+  "Tiny games. Endless swipes.",
   subtext "Swipe, play, repeat. No sign-up to start.". Primary pill
   "Start playing" calls `POST /auth/guest`, stores the returned JWT,
   navigates to AgeCheck. Text link "I have an account" navigates to
@@ -97,8 +104,9 @@ Welcome ──Start playing──► AgeCheck ──≥13──► Interests ─
   change this later.", a wrapping grid of toggle chips: Runner, Puzzle,
   Casual, Arcade, Racing, Cozy, Word, Strategy, Sports, Rhythm (selection
   is optional, any number of chips, including zero). "Continue" and
-  "Skip" both `PATCH /users/me` with the current `interests` array
-  (empty array on Skip) and navigate to SaveProgress.
+  "Skip" both `PATCH /users/me` with the current `interests` array —
+  whatever is selected at the moment the button is pressed, which is
+  `[]` only if nothing was picked — and navigate to SaveProgress.
 - **SaveProgress** — headline "Save your progress", subtext "Keep your
   score, coins and favourites on any phone.". Three stacked buttons:
   "Continue with Apple" and "Continue with Google" are rendered but
@@ -250,10 +258,10 @@ mobile/
       typography.ts                — font family + type-scale constants
     assets/fonts/CalSans-SemiBold.otf
     components/
-      BlobMascot.tsx                — SVG mascot, props: color, size
+      BlobMascot.tsx                — PNG mascot image, props: name, size
       PillButton.tsx                — primary/secondary pill button
       ProgressDots.tsx              — step indicator, props: stepCount, activeIndex
-      Chip.tsx                      — toggle chip, props: label, selected, onToggle
+      Chip.tsx                      — toggle chip, props: label, selected, onPress
     state/
       OnboardingContext.tsx         — provider + reducer + typed hook
       onboardingReducer.ts          — pure reducer + helpers (exported for unit tests)
