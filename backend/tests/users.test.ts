@@ -30,3 +30,24 @@ test('PATCH /users/me ignores unknown keys', async () => {
   expect(res.status).toBe(200);
   expect(res.body.birthYear).toBe(1999);
 });
+
+test('PATCH /users/me rejects a non-integer birthYear with 400', async () => {
+  const token = await guestToken();
+  const res = await request(app).patch('/users/me').set('Authorization', `Bearer ${token}`).send({ birthYear: 'abc' });
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe('birthYear is invalid');
+});
+
+test('PATCH /users/me rejects null interests with 400', async () => {
+  const token = await guestToken();
+  const res = await request(app).patch('/users/me').set('Authorization', `Bearer ${token}`).send({ interests: null });
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe('interests is invalid');
+});
+
+test('PATCH /users/me rejects a non-array interests value with 400', async () => {
+  const token = await guestToken();
+  const res = await request(app).patch('/users/me').set('Authorization', `Bearer ${token}`).send({ interests: 'Runner' });
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe('interests is invalid');
+});

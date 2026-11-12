@@ -33,10 +33,15 @@ authRouter.post('/guest', async (_req, res, next) => {
 });
 
 authRouter.post('/signup', optionalGuestAuth, async (req, res, next) => {
-  const { email, password } = req.body ?? {};
+  const { email: rawEmail, password } = req.body ?? {};
 
-  if (typeof email !== 'string' || !email || typeof password !== 'string' || password.length < 8) {
-    res.status(400).json({ error: 'Invalid email or password' });
+  const email = typeof rawEmail === 'string' ? rawEmail.trim() : '';
+  if (!email || !email.includes('@')) {
+    res.status(400).json({ error: 'Email is required' });
+    return;
+  }
+  if (typeof password !== 'string' || password.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
     return;
   }
 
@@ -56,6 +61,14 @@ authRouter.post('/signup', optionalGuestAuth, async (req, res, next) => {
       throw err;
     }
 
+    if (!user) {
+      // The guest token's row was already upgraded (or no longer exists) by
+      // the time this request landed: a stale/replayed guest JWT must not be
+      // allowed to overwrite the credentials an earlier signup already set.
+      res.status(409).json({ error: 'Account already registered' });
+      return;
+    }
+
     const token = signToken({ sub: user.id, isGuest: false });
     res.status(200).json({ token, user: toPublicUser(user) });
   } catch (err) {
@@ -67,8 +80,8 @@ authRouter.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body ?? {};
 
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      res.status(401).json({ error: 'Invalid email or password' });
+    if (typeof email !== 'string' || !email || typeof password !== 'string' || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
       return;
     }
 

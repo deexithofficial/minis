@@ -51,22 +51,22 @@ export async function upgradeToAccount(
   id: string,
   email: string,
   passwordHash: string
-): Promise<UserRow> {
+): Promise<UserRow | null> {
   const result = await pool.query<UserRow>(
     `UPDATE users
      SET email = lower($2), password_hash = $3, is_guest = false, updated_at = now()
-     WHERE id = $1
+     WHERE id = $1 AND is_guest = true
      RETURNING *`,
     [id, email, passwordHash]
   );
-  return result.rows[0];
+  return result.rows[0] ?? null;
 }
 
 type ProfilePatch = Partial<{
   birthYear: number;
   interests: string[];
-  characterLook: string;
-  characterName: string;
+  characterLook: string | null;
+  characterName: string | null;
   notificationsOptIn: boolean;
 }>;
 
